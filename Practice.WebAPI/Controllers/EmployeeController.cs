@@ -67,7 +67,7 @@ namespace Practice.WebAPI.Controllers
             }
         }
 
-
+        [Authorize(Roles = "Admin")]
         [HttpPost("CreateEmployee")]
         public async Task<IActionResult> CreateEmployee([FromForm] EmployeeDto employeeDto)
         {

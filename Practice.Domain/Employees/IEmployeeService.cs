@@ -10,5 +10,9 @@ namespace Practice.Domain.Employees
     {
         public Task<List<Employee>> GetAllEmployees();
         public Task<Employee> CreateEmployee(Employee employee);
+        public Task<Employee> GetByEmployeeId(int id);
+        public Task<Employee> UpdateEmployee(Employee employee);
+        public Task<Employee> DeleteEmployee(Employee employee);
+        public Task<Employee> SearchEmployeeByName(string searchString);
     }
 }

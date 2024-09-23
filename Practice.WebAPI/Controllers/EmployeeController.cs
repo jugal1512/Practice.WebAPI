@@ -112,5 +112,55 @@ namespace Practice.WebAPI.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = ex.Message });
             }
         }
+
+        [HttpPut("UpdateEmployee")]
+        public async Task<IActionResult> UpdateEmployee([FromForm]EmployeeDto employee)
+        {
+            try {
+                var updateEmployeeDetails = _mapper.Map<Employee>(employee);
+                var employeeExist = await _employeeService.GetByEmployeeId(updateEmployeeDetails.Id);
+                if (employeeExist != null)
+                {
+                    if (employee.ProfileImage != null)
+                    {
+                        if (employeeExist.ProfileImage != null)
+                        {
+                            var oldImage = employeeExist.ProfileImage;
+                            var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "ProfileImages", oldImage);
+                            if (System.IO.File.Exists(oldImagePath))
+                            {
+                                System.IO.File.Delete(oldImagePath);
+                            }
+                        }
+                        var newFileName = Guid.NewGuid().ToString() + "_" + employee.ProfileImage.FileName;
+                        var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "ProfileImages");
+                        if (!Directory.Exists(directoryPath))
+                        {
+                            Directory.CreateDirectory(directoryPath);
+                        }
+                        var filePath = Path.Combine(directoryPath, newFileName);
+                        using (FileStream stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await employee.ProfileImage.CopyToAsync(stream);
+                        }
+                        updateEmployeeDetails.ProfileImage = newFileName;
+                    }
+                    else
+                    {
+                        updateEmployeeDetails.ProfileImage = employeeExist.ProfileImage;
+                    }
+                    var updateEmployee = await _employeeService.UpdateEmployee(updateEmployeeDetails);
+                    return Ok(new Response { Status = "Success", Message = "Employee Update Successfully." });
+                }
+                else
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "Employee Not Found!" });
+                }
+                return Ok();
+            }
+            catch (Exception ex) {
+                return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = ex.Message });
+            }
+        }
     }
 }

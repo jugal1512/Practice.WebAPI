@@ -1,15 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Practice.Domain.Employees;
 using Practice.EFCore.DBContext;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Practice.EFCore.Repositories
 {
-    public class EmployeeRepository:IEmployeeRepository
+    public class EmployeeRepository : IEmployeeRepository
     {
         private readonly ApplicationDbContext _context;
         public EmployeeRepository(ApplicationDbContext context)
@@ -26,6 +21,33 @@ namespace Practice.EFCore.Repositories
             await _context.Employees.AddAsync(employee);
             await _context.SaveChangesAsync();
             return employee;
+        }
+
+        public async Task<Employee> GetByEmployeeId(int id)
+        {
+            var employee =  await _context.Employees.Where(e => e.Id == id).AsNoTracking().FirstOrDefaultAsync();
+            return employee;
+        }
+
+        public async Task<Employee> UpdateEmployee(Employee employee)
+        {
+            var employeeExist = await GetByEmployeeId(employee.Id);
+            if (employeeExist != null) {
+                var updateEmployee = _context.Update(employee);
+                _context.SaveChanges();
+            }
+            return employee;
+
+        }
+
+        public Task<Employee> DeleteEmployee(Employee employee)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Employee> SearchEmployeeByName(string searchString)
+        {
+            throw new NotImplementedException();
         }
     }
 }

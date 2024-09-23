@@ -22,5 +22,25 @@ namespace Practice.Domain.Employees
         {
             return await _employeeRepository.CreateEmployee(employee);
         }
+
+        public async Task<Employee> GetByEmployeeId(int id)
+        {
+            return await _employeeRepository.GetByEmployeeId(id);
+        }
+
+        public async Task<Employee> UpdateEmployee(Employee employee)
+        {
+            return await _employeeRepository.UpdateEmployee(employee);
+        }
+
+        public async Task<Employee> DeleteEmployee(Employee employee)
+        {
+            return await _employeeRepository.DeleteEmployee(employee);
+        }
+
+        public async Task<Employee> SearchEmployeeByName(string searchString)
+        {
+            return await _employeeRepository.SearchEmployeeByName(searchString);
+        }
     }
 }

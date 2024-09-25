@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Practice.Domain.Employees;
 using Practice.Domain.RegisterUser;
 using Practice.Domain.Role;
+using Practice.Domain.Skills;
 using Practice.EFCore.DBContext;
 using Practice.EFCore.Repositories;
 using Practice.WebAPI.Utility;
@@ -48,6 +49,9 @@ namespace Practice.WebAPI
             services.AddScoped<EmployeeService>();
             services.AddTransient<IEmployeeService, EmployeeService>();
             services.AddTransient<IEmployeeRepository, EmployeeRepository>();
+            services.AddScoped<SkillService>();
+            services.AddTransient<ISkillService, SkillService>();
+            services.AddTransient<ISkillRepository, SkillRepository>();
 
             // Adding Authentication
             services.AddAuthentication(options =>

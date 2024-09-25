@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Practice.Domain.Employees;
 using Practice.Domain.Skills;
 using Practice.WebAPI.Models;
@@ -13,11 +14,13 @@ namespace Practice.WebAPI.Controllers
     {
         private readonly IMapper _mapper;
         private readonly EmployeeService _employeeService;
+        private readonly SkillService _skillService;
         private readonly IWebHostEnvironment _webHostEnvironment;
-        public EmployeeController(IMapper mapper, EmployeeService employeeService, IWebHostEnvironment webHostEnvironment)
+        public EmployeeController(IMapper mapper, EmployeeService employeeService, SkillService skillService , IWebHostEnvironment webHostEnvironment)
         {
             _mapper = mapper;
             _employeeService = employeeService;
+            _skillService = skillService;
             _webHostEnvironment = webHostEnvironment;
         }
 
@@ -73,36 +76,13 @@ namespace Practice.WebAPI.Controllers
         {
             try
             {
-                var newFileName = Guid.NewGuid().ToString() + "_" + employeeDto.ProfileImage.FileName;
-                var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "ProfileImages");
-                if (!Directory.Exists(directoryPath))
-                {
-                    Directory.CreateDirectory(directoryPath);
-                }
-                var filePath = Path.Combine(directoryPath, newFileName);
-                using (FileStream stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await employeeDto.ProfileImage.CopyToAsync(stream);
-                }
+                string profileImageName = await SaveProfileImage(employeeDto.ProfileImage);
 
-                List<Skill> skillItems = new List<Skill>();
-                if (!string.IsNullOrEmpty(employeeDto.SkillName))
-                {
-                    var skillArray = employeeDto.SkillName.Split(",");
-                    if (skillArray.Length > 0)
-                    {
-                        foreach (var item in skillArray)
-                        {
-                            Skill skill = new Skill();
-                            skill.SkillName = item;
-                            skillItems.Add(skill);
-                        }
-                    }
-                }
+                var skillItems = ParseSkills(employeeDto.SkillName);
 
                 var employeeModal = _mapper.Map<Employee>(employeeDto);
                 employeeModal.Skills = skillItems;
-                employeeModal.ProfileImage = newFileName;
+                employeeModal.ProfileImage = profileImageName;
                 var employee = await _employeeService.CreateEmployee(employeeModal);
                 return Ok(new Response { Status = "Success", Message = "Employee Create Successfully." });
             }
@@ -115,51 +95,68 @@ namespace Practice.WebAPI.Controllers
         [HttpPut("UpdateEmployee")]
         public async Task<IActionResult> UpdateEmployee([FromForm]EmployeeDto employee)
         {
-            try {
+            try 
+            {
+                if (!string.IsNullOrEmpty(employee.SkillName))
+                {
+                    await _skillService.DeleteSkills(employee.Id);
+                }
+                var skillItems = ParseSkills(employee.SkillName);
+
+                var employeeExist = await _employeeService.GetByEmployeeId(employee.Id);
+                string profileImageName = employeeExist.ProfileImage;
+                if (employee.ProfileImage != null)
+                {
+                    if (employeeExist.ProfileImage != null)
+                    {
+                        DeleteOldProfileImage(employeeExist.ProfileImage);
+                    }
+                    profileImageName = await SaveProfileImage(employee.ProfileImage); ;
+                }
                 var updateEmployeeDetails = _mapper.Map<Employee>(employee);
-                var employeeExist = await _employeeService.GetByEmployeeId(updateEmployeeDetails.Id);
-                if (employeeExist != null)
-                {
-                    if (employee.ProfileImage != null)
-                    {
-                        if (employeeExist.ProfileImage != null)
-                        {
-                            var oldImage = employeeExist.ProfileImage;
-                            var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "ProfileImages", oldImage);
-                            if (System.IO.File.Exists(oldImagePath))
-                            {
-                                System.IO.File.Delete(oldImagePath);
-                            }
-                        }
-                        var newFileName = Guid.NewGuid().ToString() + "_" + employee.ProfileImage.FileName;
-                        var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "ProfileImages");
-                        if (!Directory.Exists(directoryPath))
-                        {
-                            Directory.CreateDirectory(directoryPath);
-                        }
-                        var filePath = Path.Combine(directoryPath, newFileName);
-                        using (FileStream stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await employee.ProfileImage.CopyToAsync(stream);
-                        }
-                        updateEmployeeDetails.ProfileImage = newFileName;
-                    }
-                    else
-                    {
-                        updateEmployeeDetails.ProfileImage = employeeExist.ProfileImage;
-                    }
-                    var updateEmployee = await _employeeService.UpdateEmployee(updateEmployeeDetails);
-                    return Ok(new Response { Status = "Success", Message = "Employee Update Successfully." });
-                }
-                else
-                {
-                    return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "Employee Not Found!" });
-                }
-                return Ok();
+                updateEmployeeDetails.Skills = skillItems;
+                updateEmployeeDetails.ProfileImage = profileImageName;
+                var updateEmployee = await _employeeService.UpdateEmployee(updateEmployeeDetails);
+                return Ok(new Response { Status = "Success", Message = "Employee Update Successfully." });
             }
             catch (Exception ex) {
                 return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = ex.Message });
             }
+        }
+
+        private async Task<string> SaveProfileImage(IFormFile profileImage)
+        {
+            var newFileName = Guid.NewGuid() + "_" + profileImage.FileName;
+            var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "ProfileImages");
+            Directory.CreateDirectory(directoryPath);
+            var filePath = Path.Combine(directoryPath, newFileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await profileImage.CopyToAsync(stream);
+            }
+
+            return newFileName;
+        }
+
+        private void DeleteOldProfileImage(string profileImage)
+        {
+            var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "ProfileImages", profileImage);
+            if (System.IO.File.Exists(oldImagePath))
+            {
+                System.IO.File.Delete(oldImagePath);
+            }
+        }
+
+        private List<Skill> ParseSkills(string skillNames)
+        {
+            var skills = new List<Skill>();
+            if (!string.IsNullOrEmpty(skillNames))
+            {
+                var skillArray = skillNames.Split(",");
+                skills.AddRange(skillArray.Select(name => new Skill { SkillName = name.Trim() }));
+            }
+            return skills;
         }
     }
 }

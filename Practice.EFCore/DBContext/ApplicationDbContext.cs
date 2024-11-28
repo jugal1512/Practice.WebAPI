@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Practice.Domain.Employees;
 using Practice.Domain.Skills;
+using Practice.Domain.Student;
 using System.Reflection;
 
 
@@ -18,7 +19,7 @@ namespace Practice.EFCore.DBContext
 
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Skill> Skills { get; set; }
-
+        public DbSet<Student> Students { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

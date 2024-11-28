@@ -17,6 +17,7 @@ namespace Practice.EFCore.Repositories
             _userManager = userManager;
             _roleManager = roleManager;
         }
+              
 
         public async Task<IdentityUser> UserExists(string userName)
         {

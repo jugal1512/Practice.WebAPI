@@ -4,10 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
+using OfficeOpenXml;
 using Practice.Domain.Employees;
 using Practice.Domain.RegisterUser;
 using Practice.Domain.Role;
 using Practice.Domain.Skills;
+using Practice.Domain.Student;
 using Practice.EFCore.DBContext;
 using Practice.EFCore.Repositories;
 using Practice.WebAPI.Utility;
@@ -32,6 +34,8 @@ namespace Practice.WebAPI
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
             //Add Automapper
             services.AddAutoMapper(typeof(Startup));
 
@@ -52,6 +56,9 @@ namespace Practice.WebAPI
             services.AddScoped<SkillService>();
             services.AddTransient<ISkillService, SkillService>();
             services.AddTransient<ISkillRepository, SkillRepository>();
+            services.AddScoped<StudentService>();
+            services.AddTransient<IStudentService, StudentService>();
+            services.AddTransient<IStudentRepository, StudentRepository>();
 
             // Adding Authentication
             services.AddAuthentication(options =>

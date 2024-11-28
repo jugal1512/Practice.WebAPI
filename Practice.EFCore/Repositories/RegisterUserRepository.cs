@@ -19,6 +19,9 @@ namespace Practice.EFCore.Repositories
         }
               
 
+
+
+
         public async Task<IdentityUser> UserExists(string userName)
         {
             var userExists = await _userManager.FindByNameAsync(userName);
